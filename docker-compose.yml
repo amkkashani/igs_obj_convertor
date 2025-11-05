@@ -4,7 +4,7 @@ services:
   web-api:
     build: ./api  # This is correct
     ports:
-      - "8000:8000" # This is correct
+      - "8765:8000" # This is correct
     volumes:
       # 1. This gives the 'web-api' container permission to run 'docker' commands
       - /var/run/docker.sock:/var/run/docker.sock
