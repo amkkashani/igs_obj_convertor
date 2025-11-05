@@ -71,7 +71,7 @@ async def convert_igs_to_obj(file: UploadFile = File(...)):
                 # it exists on the host (where the Docker daemon is running).
                 "-v", f"{temp_dir_path}:/app",
                 
-                "gmsh/gmsh",  # The public Docker image to use
+                "trophime/gmsh",  # The corrected, public Docker image
                 
                 # The command to run inside the gmsh container
                 "gmsh", f"/app/{input_filename}",

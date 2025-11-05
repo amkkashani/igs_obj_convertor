@@ -2,18 +2,20 @@ version: '3.8'
 
 services:
   web-api:
-    build: ./api  # This is correct
+    build: ./api
     ports:
-      - "8765:8000" # This is correct
+      - "8000:8000"
     volumes:
-      # 1. This gives the 'web-api' container permission to run 'docker' commands
       - /var/run/docker.sock:/var/run/docker.sock
-      
-      # 2. !! THIS IS THE CRITICAL FIX !!
-      # This maps the host's /tmp directory to the container's /tmp directory.
-      # Now, when Python creates /tmp/tmpXYZ, it exists on the host,
-      # and the 'docker run' command will find it.
       - /tmp:/tmp
+    # We can add a 'depends_on' to be extra sure,
+    # but 'docker-compose up' will pull all images anyway.
+    depends_on:
+      - converter
 
-  # The 'converter' service you had here has been REMOVED.
-  # It is not needed, as your Python code calls the gmsh image directly.
+  # --- NEW SERVICE DEFINITION ---
+  # This service's only job is to ensure the gmsh
+  # image is pulled when you run 'docker-compose up'.
+  converter:
+    image: trophime/gmsh  # The correct image name
+    command: "true"         # A dummy command that just exits
