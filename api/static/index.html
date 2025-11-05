@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGS to OBJ Converter</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: grid; 
+            place-items: center; 
+            min-height: 90vh; 
+            background-color: #f0f2f5; 
+            color: #333;
+            margin: 0;
+        }
+        #container { 
+            background: #ffffff; 
+            padding: 2rem 2.5rem; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            width: 100%;
+            max-width: 450px;
+            box-sizing: border-box;
+        }
+        h1 { 
+            text-align: center; 
+            color: #111;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+        }
+        input[type="file"] { 
+            display: block;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 2px dashed #ddd;
+            border-radius: 4px;
+            background-color: #fafafa;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+        }
+        input[type="file"]::file-selector-button {
+            display: none;
+        }
+        button { 
+            width: 100%; 
+            padding: 0.8rem; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 1rem; 
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled { 
+            background: #c0c0c0;
+            cursor: not-allowed;
+        }
+        #status { 
+            margin-top: 1.5rem; 
+            text-align: center; 
+            font-weight: 500;
+            min-height: 1.2em;
+        }
+        .status-error { color: #d93025; }
+        .status-success { color: #1a73e8; }
+        .status-pending { color: #555; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>IGS to OBJ Converter</h1>
+        <form id="upload-form">
+            <input type="file" id="file-input" name="file" accept=".igs,.iges" required>
+            <button type="submit" id="submit-btn">Convert and Download</button>
+        </form>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-input');
+        const statusEl = document.getElementById('status');
+        const submitBtn = document.getElementById('submit-btn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                setStatus('Please select a file.', 'error');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            setStatus('Uploading and converting...', 'pending');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    // Try to get error detail from the server's JSON response
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `Server error: ${response.statusText}`);
+                }
+
+                // --- Success: Trigger Download ---
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                
+                // Create a clean filename for the download
+                const baseFilename = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                a.download = `${baseFilename}.obj`;
+                
+                a.href = url;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                
+                a.click(); // Click the link to start download
+                
+                // Clean up
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                setStatus('Conversion successful! Download started.', 'success');
+
+            } catch (error) {
+                console.error('Conversion failed:', error);
+                setStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                fileInput.value = null; // Clear the file input
+            }
+        });
+
+        function setStatus(message, type) {
+            statusEl.textContent = message;
+            statusEl.className = `status-${type}`; // 'status-error', 'status-success', etc.
+        }
+    </script>
+</body>
+</html>
